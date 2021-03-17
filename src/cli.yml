@@ -1,0 +1,32 @@
+name: bible-cli
+version: "1.0"
+author: Mirko Hecky
+about: Does awesome things
+args:
+    - BIBLE:
+        help: Sets the bible xml file to use
+        required: true
+        index: 1
+    - GREEK_BIBLE:
+        help: With a greek bible you can optimize the strong numbers in the translations
+        required: false
+        index: 2
+    - verbose:
+        short: v
+        multiple: true
+        help: Sets the level of verbosity
+subcommands:
+    - search:
+        about: searches in the bible
+        args:
+            - TERM:
+                help: search term
+                required: true
+                index: 1
+            - times:
+                help: Execute search given times
+                takes_value: true
+                short: t
+                long: times
+    - serve:
+        about: serves the bible REST api
