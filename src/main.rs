@@ -60,6 +60,13 @@ async fn main() -> std::io::Result<()> {
             // let bookname: BookNames = num::FromPrimitive::from_u8(1);
             println!("  {} {},{}", BOOKS[v.book as usize - 1], v.chapter, v.verse);
         }
+    } else if let Some(matches) = matches.subcommand_matches("export") {
+        let outdir = String::from(matches.value_of("outdir").unwrap_or("./static"));
+        for book in bible.books {
+            for chapter in book.chapters {
+                // TODO: Write json files
+            }
+        }
     } else if let Some(matches) = matches.subcommand_matches("serve") {
         let bible = Arc::new(Mutex::new(bible));
 

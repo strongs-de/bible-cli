@@ -16,6 +16,15 @@ args:
         multiple: true
         help: Sets the level of verbosity
 subcommands:
+    - export:
+        about: Exports the bible into static json files
+        args:
+            - outdir:
+                help: Output directory
+                required: false
+                takes_value: true
+                short: o
+                long: outdir
     - search:
         about: searches in the bible
         args:

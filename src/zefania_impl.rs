@@ -124,12 +124,18 @@ impl BibleParser for ZefaniaBible {
                 // }
             // }
 
+            // for book in &greek.books {
+            //     println!("Book {}, Chapters {}, {}", book.nr, book.chapters.len(), book.chapters[0].verses[0].verse);
+            //     let verse = bible.get_verse(book.nr, 0, 0);
+            // }
+
             for book in &bible.books[39..66] {
                 for chapter in &book.chapters {
                     for verse in &chapter.verses {
                         // Match chunks with strongs
                         for cnr in 0..verse.chunks.len() {
                             let greek_verse: Option<&Verse> = greek.get_verse(book.nr, chapter.chapter, verse.verse);
+                            // println!("Book {}, Chapter {}, Verse {}", book.nr, chapter.chapter, verse.verse);
                             if greek_verse.is_none() { continue; }
                             let greek_verse = greek_verse.unwrap();
 
