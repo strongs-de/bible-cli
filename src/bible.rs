@@ -1,12 +1,20 @@
-use serde::{Serialize, Deserialize};
-use std::cell::{Cell, RefCell};
+use serde::{Serialize, Serializer};
+use std::cell::{RefCell};
+use std::collections::HashMap;
 
 // Declarations
 #[derive(Clone, Serialize)]
 pub struct Bible {
-    pub identifier: &'static str,
-    pub name: &'static str,
+    pub identifier: String,
+    pub name: String,
     pub books: Vec<Book>,
+    pub strong_dict: HashMap<i32, StrongDictEntry>,
+}
+
+#[derive(Clone, Serialize)]
+pub struct StrongDictEntry {
+    pub variants: HashMap<String, u64>,
+    pub refs: Vec<VerseRef>,
 }
 
 #[derive(Clone, Serialize)]
@@ -28,7 +36,7 @@ pub struct Verse {
     pub chunks: Vec<Chunk>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone)]
 pub struct VerseRef {
     pub book: usize,
     pub chapter: usize,
@@ -44,7 +52,7 @@ pub struct Chunk {
 #[derive(Clone, Serialize)]
 pub struct StrongNumber {
     pub number: i32,
-    pub origin_word: String
+    pub grammar: Option<String>
 }
 
 fn mut_find_or_insert<T: PartialEq>(vec: &mut Vec<T>, val: T) -> &mut T {
@@ -55,66 +63,11 @@ fn mut_find_or_insert<T: PartialEq>(vec: &mut Vec<T>, val: T) -> &mut T {
         vec.last_mut().unwrap()
     }
 }
-// fn mut_find_or_insert<T: PartialEq, F: Fn(T) -> bool>(vec: &mut Vec<T>, default: T, comparator: F) -> &mut T {
-//     if let Some(i) = (0..vec.len()).find(|&i| comparator(vec[i])) {
-//         &mut vec[i]
-//     } else {
-//         vec.push(default);
-//         vec.last_mut().unwrap()
-//     }
-// }
-
-// Iterator
-// struct VerseIterator<'a> {
-//     bible: &'a mut Bible,
-//     book: usize,
-//     chapter: usize,
-//     verse: usize,
-// }
-
-// impl<'a> IntoIterator for &'a mut Bible {
-//     type Item = &'a mut VerseRef;
-//     type IntoIter = VerseIterator<'a>;
-
-//     fn into_iter(self) -> Self::IntoIter {
-//         VerseIterator {
-//             bible: self,
-//             book: 0,
-//             chapter: 0,
-//             verse: 0
-//         }
-//     }
-// }
-
-// impl Iterator for VerseIterator {
-//     type Item = VerseRef;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         let mut verse_ref = self.bible.get_verse_ref(self.book, self.chapter, self.verse);
-//         if verse_ref.is_none() {
-//             self.verse += 1;
-//             verse_ref = self.bible.get_verse_ref(self.book, self.chapter, self.verse);
-//         }
-//         if verse_ref.is_none() {
-//             self.chapter += 1;
-//             self.verse = 0;
-//             verse_ref = self.bible.get_verse_ref(self.book, self.chapter, self.verse);
-//         }
-//         if verse_ref.is_none() {
-//             self.book += 1;
-//             self.chapter = 0;
-//             self.verse = 0;
-//             verse_ref = self.bible.get_verse_ref(self.book, self.chapter, self.verse);
-//         }
-//         verse_ref
-//     }
-// }
-
 
 // Implementation
 impl Bible {
     pub fn new(identifier: &'static str, name: &'static str) -> Bible {
-        Bible { identifier: identifier, name: name, books: vec![] }
+        Bible { identifier: String::from(identifier), name: String::from(name), books: vec![], strong_dict: HashMap::new() }
     }
 
     pub fn add_book(&mut self, book: usize) {
@@ -157,6 +110,19 @@ impl Bible {
 
     pub fn get_verse_ref(&self, book: usize, chapter: usize, verse: usize) -> Option<VerseRef> {
         self.get_verse(book, chapter, verse).map(|v| VerseRef::new(book, chapter, verse))
+    }
+
+    pub fn insert_strong_variant(&mut self, strong_nr: i32, text: String, verse_ref: VerseRef) {
+        let entry = self.strong_dict.entry(strong_nr).or_insert(StrongDictEntry::new());
+        let count = entry.variants.entry(text.to_lowercase()).or_insert(0);
+        *count += 1;
+        entry.refs.push(verse_ref);
+    }
+}
+
+impl StrongDictEntry {
+    pub fn new() -> StrongDictEntry {
+        StrongDictEntry { refs: vec![], variants: HashMap::new() }
     }
 }
 
@@ -238,7 +204,6 @@ impl Verse {
     }
 
     pub fn to_string(&self) -> String {
-        // self.chunks.iter().map(|x| x.to_string() + " ").collect::<String>()
         self.chunks.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" ")
     }
 
@@ -256,8 +221,8 @@ impl Chunk {
         Chunk { text: text, strong: None }
     }
 
-    pub fn new_strong(text: String, strong_number: i32) -> Chunk {
-        Chunk { text: text, strong: Some(RefCell::new(StrongNumber::new(strong_number, String::from("")))) }
+    pub fn new_strong(text: String, strong_number: i32, grammar: Option<String>) -> Chunk {
+        Chunk { text: text, strong: Some(RefCell::new(StrongNumber::new(strong_number, grammar))) }
     }
 
     pub fn to_string(&self) -> String {
@@ -266,13 +231,22 @@ impl Chunk {
 }
 
 impl StrongNumber {
-    pub fn new(number: i32, origin_word: String) -> StrongNumber {
-        StrongNumber { number: number, origin_word: origin_word }
+    pub fn new(number: i32, grammar: Option<String>) -> StrongNumber {
+        StrongNumber { number: number, grammar: grammar }
     }
 }
 
 impl VerseRef {
     pub fn new(book: usize, chapter: usize, verse: usize) -> Self {
         Self { book: book, chapter: chapter, verse: verse }
+    }
+}
+
+impl Serialize for VerseRef {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(format!("{}_{}_{}", self.book, self.chapter, self.verse).as_str())
     }
 }

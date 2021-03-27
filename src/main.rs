@@ -19,9 +19,11 @@ use traits::BibleSearcher;
 use traits::BibleParser;
 use constants::BOOKS;
 
+use std::fs;
 use std::time::Instant;
 use std::sync::{Arc, Mutex};
 use clap::App;
+use serde_json;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
@@ -40,9 +42,8 @@ async fn main() -> std::io::Result<()> {
     let yaml = load_yaml!("cli.yml");
     let matches = App::from_yaml(yaml).get_matches();
     let bible = matches.value_of("BIBLE").unwrap();
-    let greek_bible = matches.value_of("GREEK_BIBLE");
 
-    let bible = ZefaniaBible::parse(bible, greek_bible).unwrap();
+    let bible = ZefaniaBible::parse(bible).unwrap();
 
     if let Some(matches) = matches.subcommand_matches("search") {
         let term = String::from(matches.value_of("TERM").unwrap());
@@ -61,13 +62,29 @@ async fn main() -> std::io::Result<()> {
             println!("  {} {},{}", BOOKS[v.book as usize - 1], v.chapter, v.verse);
         }
     } else if let Some(matches) = matches.subcommand_matches("export") {
+        println!("Export json files for the chapters ...");
         let outdir = String::from(matches.value_of("outdir").unwrap_or("./static"));
         for book in bible.books {
+            let dir = format!("{}/bibles/{}/{}", &outdir, bible.identifier, book.nr);
             for chapter in book.chapters {
-                // TODO: Write json files
+                // Write json files
+                let path = format!("{}/{}.json", dir, chapter.chapter);
+                fs::create_dir_all(&dir)?;
+                let chapter_string = serde_json::to_string(&chapter)?;
+                fs::write(path, chapter_string)?;
             }
         }
-    } else if let Some(matches) = matches.subcommand_matches("serve") {
+        println!("  ... done.\nExport json files for the strong numbers ...");
+        for (strong_number, entry) in bible.strong_dict {
+            let dir = format!("{}/bibles/{}/strongs", &outdir, bible.identifier);
+            let path = format!("{}/{}.json", dir, strong_number);
+            fs::create_dir_all(&dir)?;
+            let strong_string = serde_json::to_string(&entry)?;
+            fs::write(path, strong_string)?;
+        }
+
+        println!("  ... done.");
+    } else if let Some(_) = matches.subcommand_matches("serve") {
         let bible = Arc::new(Mutex::new(bible));
 
         return HttpServer::new(move || {

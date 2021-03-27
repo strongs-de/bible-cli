@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use std::iter::Flatten;
 
 pub trait BibleParser {
-    fn parse(path: &str, greek_path: Option<&str>) -> Result<Bible, Box<dyn Error>>;
+    fn parse(path: &str) -> Result<Bible, Box<dyn Error>>;
 }
 
 pub trait BibleExporter {

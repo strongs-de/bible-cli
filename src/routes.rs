@@ -1,5 +1,5 @@
 use actix_web::{
-    middleware, web, App, Error, HttpResponse, HttpServer, http::StatusCode
+    web, HttpResponse
 };
 
 use std::sync::{Mutex, Arc};
@@ -8,7 +8,7 @@ use crate::traits::BibleSearcher;
 
 
 pub async fn info(bible: web::Data<Arc<Mutex<Bible>>>) -> HttpResponse {
-    HttpResponse::Ok().json(bible.lock().unwrap().identifier)
+    HttpResponse::Ok().json(String::from(&bible.lock().unwrap().identifier))
 }
 
 pub async fn chapter(bible: web::Data<Arc<Mutex<Bible>>>, info: web::Path<(usize, usize)>) -> HttpResponse {
