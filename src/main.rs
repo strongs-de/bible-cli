@@ -75,8 +75,15 @@ async fn main() -> std::io::Result<()> {
             }
         }
         println!("  ... done.\nExport json files for the strong numbers ...");
-        for (strong_number, entry) in bible.strong_dict {
-            let dir = format!("{}/bibles/{}/strongs", &outdir, bible.identifier);
+        for (strong_number, entry) in bible.greek_strong_dict {
+            let dir = format!("{}/bibles/{}/greek_strongs", &outdir, bible.identifier);
+            let path = format!("{}/{}.json", dir, strong_number);
+            fs::create_dir_all(&dir)?;
+            let strong_string = serde_json::to_string(&entry)?;
+            fs::write(path, strong_string)?;
+        }
+        for (strong_number, entry) in bible.hebrew_strong_dict {
+            let dir = format!("{}/bibles/{}/hebrew_strongs", &outdir, bible.identifier);
             let path = format!("{}/{}.json", dir, strong_number);
             fs::create_dir_all(&dir)?;
             let strong_string = serde_json::to_string(&entry)?;

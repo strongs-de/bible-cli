@@ -8,7 +8,8 @@ pub struct Bible {
     pub identifier: String,
     pub name: String,
     pub books: Vec<Book>,
-    pub strong_dict: HashMap<i32, StrongDictEntry>,
+    pub greek_strong_dict: HashMap<i32, StrongDictEntry>,
+    pub hebrew_strong_dict: HashMap<i32, StrongDictEntry>,
 }
 
 #[derive(Clone, Serialize)]
@@ -67,7 +68,7 @@ fn mut_find_or_insert<T: PartialEq>(vec: &mut Vec<T>, val: T) -> &mut T {
 // Implementation
 impl Bible {
     pub fn new(identifier: &'static str, name: &'static str) -> Bible {
-        Bible { identifier: String::from(identifier), name: String::from(name), books: vec![], strong_dict: HashMap::new() }
+        Bible { identifier: String::from(identifier), name: String::from(name), books: vec![], greek_strong_dict: HashMap::new(), hebrew_strong_dict: HashMap::new() }
     }
 
     pub fn add_book(&mut self, book: usize) {
@@ -113,7 +114,11 @@ impl Bible {
     }
 
     pub fn insert_strong_variant(&mut self, strong_nr: i32, text: String, verse_ref: VerseRef) {
-        let entry = self.strong_dict.entry(strong_nr).or_insert(StrongDictEntry::new());
+        let entry = if verse_ref.book < 39 {
+            &mut self.hebrew_strong_dict
+        } else {
+            &mut self.greek_strong_dict
+        }.entry(strong_nr).or_insert(StrongDictEntry::new());
         let count = entry.variants.entry(text.to_lowercase()).or_insert(0);
         *count += 1;
         entry.refs.push(verse_ref);
