@@ -14,8 +14,14 @@ pub struct Bible {
 
 #[derive(Clone, Serialize)]
 pub struct StrongDictEntry {
-    pub variants: HashMap<String, u64>,
+    pub variants: Vec<StrongVariant>,
     pub refs: Vec<VerseRef>,
+}
+
+#[derive(Clone, Serialize)]
+pub struct StrongVariant {
+    pub variant: String,
+    pub count: u32,
 }
 
 #[derive(Clone, Serialize)]
@@ -119,15 +125,19 @@ impl Bible {
         } else {
             &mut self.greek_strong_dict
         }.entry(strong_nr).or_insert(StrongDictEntry::new());
-        let count = entry.variants.entry(text.to_lowercase()).or_insert(0);
-        *count += 1;
+        let found = entry.variants.iter_mut().find(|x| x.variant == text.to_lowercase());
+        if found.is_some() {
+            found.unwrap().count += 1;
+        } else {
+            entry.variants.push(StrongVariant { variant: text.to_lowercase(), count: 0});
+        }
         entry.refs.push(verse_ref);
     }
 }
 
 impl StrongDictEntry {
     pub fn new() -> StrongDictEntry {
-        StrongDictEntry { refs: vec![], variants: HashMap::new() }
+        StrongDictEntry { refs: vec![], variants: vec![] }
     }
 }
 
