@@ -3,20 +3,17 @@
 
 extern crate num;
 
-mod bible;
-mod traits;
-mod zefania_impl;
 mod constants;
 mod routes;
+extern crate bible;
 
 use flexi_logger::{Logger, opt_format, Criterion, Naming, Cleanup};
 use log::info;
 use actix_web::{App as ActixApp, web, middleware, HttpServer};
 use routes::{info, chapter, search};
 
-use zefania_impl::{ZefaniaBible};
-use traits::BibleSearcher;
-use traits::BibleParser;
+use bible::zefania_impl::{ZefaniaBible};
+use bible::traits::{BibleSearcher, BibleExporter, BibleParser};
 use constants::BOOKS;
 
 use std::fs;
@@ -64,43 +61,8 @@ async fn main() -> std::io::Result<()> {
     } else if let Some(matches) = matches.subcommand_matches("export") {
         for path in glob(bible).expect("") {
             let bible = ZefaniaBible::parse(path.unwrap().to_str().unwrap()).unwrap();
-            println!("Export json files for {} ...", bible.name);
             let outdir = String::from(matches.value_of("outdir").unwrap_or("./static"));
-            for book in bible.books {
-                let dir = format!("{}/bibles/{}/{}", &outdir, bible.identifier, book.nr);
-                fs::create_dir_all(&dir)?;
-                for chapter in book.chapters {
-                    // Write json files
-                    let path = format!("{}/{}.json", dir, chapter.chapter);
-                    let chapter_string = serde_json::to_string(&chapter)?;
-                    fs::write(path, chapter_string)?;
-
-                    let dir = format!("{}/{}", &dir, chapter.chapter);
-                    fs::create_dir_all(&dir)?;
-                    for verse in chapter.verses {
-                        let path = format!("{}/{}.json", dir, verse.verse);
-                        let verse_string = serde_json::to_string(&verse)?;
-                        fs::write(path, verse_string)?;
-                    }
-                }
-            }
-            println!("  ... done.\nExport json files for the strong numbers ...");
-            let dir = format!("{}/bibles/{}/greek_strongs", &outdir, bible.identifier);
-            fs::create_dir_all(&dir)?;
-            for (strong_number, entry) in bible.greek_strong_dict {
-                let path = format!("{}/{}.json", dir, strong_number);
-                let strong_string = serde_json::to_string(&entry)?;
-                fs::write(path, strong_string)?;
-            }
-            let dir = format!("{}/bibles/{}/hebrew_strongs", &outdir, bible.identifier);
-            fs::create_dir_all(&dir)?;
-            for (strong_number, entry) in bible.hebrew_strong_dict {
-                let path = format!("{}/{}.json", dir, strong_number);
-                let strong_string = serde_json::to_string(&entry)?;
-                fs::write(path, strong_string)?;
-            }
-
-            println!("  ... done.");
+            bible.write(outdir).unwrap();
         }
     } else if let Some(_) = matches.subcommand_matches("serve") {
         let bible = ZefaniaBible::parse(bible).unwrap();
