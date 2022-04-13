@@ -13,7 +13,6 @@ num = "0.4.0"
 num-derive = "0.3"
 num-traits = "0.2"
 serde = { version = "1.0", features = ["derive"] }
-quick-error = "2.0.1"
 log = "0.4"
 actix-web = "4.0.1"
 actix-rt = "2.7.0"

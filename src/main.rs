@@ -1,4 +1,3 @@
-#[macro_use] extern crate clap;
 #[macro_use] extern crate num_derive;
 
 extern crate num;
@@ -122,7 +121,7 @@ async fn main() -> std::io::Result<()> {
                 .app_data(web::Data::new(bible.clone()))
                 // enable logger
                 .wrap(middleware::Logger::default())
-                .data(web::JsonConfig::default().limit(4096)) // <- limit size of the payload (global configuration)
+                .app_data(web::JsonConfig::default().limit(4096)) // <- limit size of the payload (global configuration)
                 .service(web::resource("/info").route(web::get().to(info)))
                 .service(web::resource("/{book}/{chapter}").route(web::get().to(chapter)))
                 .service(web::resource("/{search}").route(web::get().to(search)))
