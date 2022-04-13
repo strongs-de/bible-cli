@@ -9,7 +9,8 @@ mod zefania_impl;
 mod constants;
 mod routes;
 
-use flexi_logger::{Logger, opt_format, Criterion, Naming, Cleanup};
+use clap::ArgMatches;
+use log4rs::{self, config::RawConfig};
 use log::info;
 use actix_web::{App as ActixApp, web, middleware, HttpServer};
 use routes::{info, chapter, search};
@@ -22,32 +23,42 @@ use constants::BOOKS;
 use std::fs;
 use std::time::Instant;
 use std::sync::{Arc, Mutex};
-use clap::App;
+use clap::{arg, command, Command};
 use serde_json;
 use glob::glob;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     // Configure logging
-    Logger::with_env_or_str("api=info")
-       .log_to_file()
-       .directory("logs")
-       .rotate(Criterion::Size(1024 * 1024), Naming::Timestamps, Cleanup::KeepLogFiles(10))
-       .format(opt_format)
-       .start()
-       .unwrap();
+    let config = String::from_utf8(include_bytes!("log4rs.yaml").to_vec()).unwrap();
+    let log4rs_config: RawConfig = serde_yaml::from_str(config.as_str()).unwrap();
+	log4rs::init_raw_config(log4rs_config).unwrap();
 
     info!("Started bible ...");
 
+    let matches = command!()
+        .arg(arg!([BIBLE] "Sets the bible xml file to use").required(true))
+        .arg(arg!(-v --verbose ... "Sets the level of verbosity"))
+        .subcommand(
+            Command::new("export")
+                .about("Exports the bible into static json files")
+                .arg(arg!(-o --outdir ... "Output directory")),
+        )
+        .subcommand(
+            Command::new("search")
+                .about("searches in the bible")
+                .arg(arg!([TERM] "search term"))
+                .arg(arg!(-t --times [time] "Execute search given times")),
+        )
+        .subcommand(Command::new("serve").about("serves the bible REST api"))
+        .get_matches();
 
-    let yaml = load_yaml!("cli.yml");
-    let matches = App::from_yaml(yaml).get_matches();
     let bible = matches.value_of("BIBLE").unwrap();
 
     if let Some(matches) = matches.subcommand_matches("search") {
         let bible = ZefaniaBible::parse(bible).unwrap();
         let term = String::from(matches.value_of("TERM").unwrap());
-        let count = value_t!(matches.value_of("times"), u32).unwrap_or(1);
+        let count = ArgMatches::value_of_t(matches,"times").unwrap_or(1);
 
         println!("Search for {} {} times ...", term, count);
 
