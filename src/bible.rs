@@ -4,6 +4,12 @@ use std::collections::HashMap;
 
 // Declarations
 #[derive(Clone, Serialize)]
+pub struct Translation {
+    pub identifier: String,
+    pub name: String,
+}
+
+#[derive(Clone, Serialize)]
 pub struct Bible {
     pub identifier: String,
     pub name: String,
@@ -98,8 +104,6 @@ impl Bible {
     }
 
     pub fn get_book(&self, book: usize) -> Option<&Book> {
-        // let books: Vec<Book> = self.books.iter().filter(|b| b.nr == book).map(|b| *b).collect();
-        // return books.first();
         if self.books.len() > book {
             Some(&self.books[book])
         } else {
@@ -132,6 +136,10 @@ impl Bible {
             entry.variants.push(StrongVariant { variant: text.to_lowercase(), count: 0});
         }
         entry.refs.push(verse_ref);
+    }
+
+    pub fn get_translation(&self) -> Translation {
+        Translation { identifier: String::from(&self.identifier), name: String::from(&self.name) }
     }
 }
 

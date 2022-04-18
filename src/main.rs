@@ -14,6 +14,7 @@ use log::info;
 use actix_web::{App as ActixApp, web, middleware, HttpServer};
 use routes::{info, chapter, search};
 
+use bible::Translation;
 use zefania_impl::{ZefaniaBible};
 use traits::BibleSearcher;
 use traits::BibleParser;
@@ -49,7 +50,11 @@ async fn main() -> std::io::Result<()> {
                 .arg(arg!([TERM] "search term"))
                 .arg(arg!(-t --times [time] "Execute search given times")),
         )
-        .subcommand(Command::new("serve").about("serves the bible REST api"))
+        .subcommand(
+            Command::new("serve")
+                .about("serves the bible REST api")
+                .arg(arg!(-p --port [port] "Port to host the API (default: 8000)"))
+        )
         .get_matches();
 
     let bible = matches.value_of("BIBLE").unwrap();
@@ -68,14 +73,15 @@ async fn main() -> std::io::Result<()> {
         }
         println!("Found {} occurrences parallel in {}ms (searched {} times)!", res.len(), (now.elapsed().as_millis() as f32 / count as f32), count);
         for v in res {
-            // let bookname: BookNames = num::FromPrimitive::from_u8(1);
             println!("  {} {},{}", BOOKS[v.book as usize - 1], v.chapter, v.verse);
         }
     } else if let Some(matches) = matches.subcommand_matches("export") {
+        let outdir = String::from(matches.value_of("outdir").unwrap_or("./static"));
+        let mut translations: Vec<Translation> = vec![];
         for path in glob(bible).expect("") {
             let bible = ZefaniaBible::parse(path.unwrap().to_str().unwrap()).unwrap();
+            translations.push(bible.get_translation());
             println!("Export json files for {} ...", bible.name);
-            let outdir = String::from(matches.value_of("outdir").unwrap_or("./static"));
             for book in bible.books {
                 let dir = format!("{}/bibles/{}/{}", &outdir, bible.identifier, book.nr);
                 fs::create_dir_all(&dir)?;
@@ -102,6 +108,7 @@ async fn main() -> std::io::Result<()> {
                 let strong_string = serde_json::to_string(&entry)?;
                 fs::write(path, strong_string)?;
             }
+
             let dir = format!("{}/bibles/{}/hebrew_strongs", &outdir, bible.identifier);
             fs::create_dir_all(&dir)?;
             for (strong_number, entry) in bible.hebrew_strong_dict {
@@ -109,12 +116,18 @@ async fn main() -> std::io::Result<()> {
                 let strong_string = serde_json::to_string(&entry)?;
                 fs::write(path, strong_string)?;
             }
-
-            println!("  ... done.");
         }
-    } else if let Some(_) = matches.subcommand_matches("serve") {
+
+        println!("Export translations.json file ...");
+        let path = format!("{}/bibles/translations.json", outdir);
+        let translations_string = serde_json::to_string(&translations)?;
+        fs::write(path, translations_string)?;
+
+        println!("  ... done.");
+    } else if let Some(serve_args) = matches.subcommand_matches("serve") {
         let bible = ZefaniaBible::parse(bible).unwrap();
         let bible = Arc::new(Mutex::new(bible));
+        let port = ArgMatches::value_of_t(serve_args,"port").unwrap_or(8000);
 
         return HttpServer::new(move || {
             ActixApp::new()
@@ -126,7 +139,7 @@ async fn main() -> std::io::Result<()> {
                 .service(web::resource("/{book}/{chapter}").route(web::get().to(chapter)))
                 .service(web::resource("/{search}").route(web::get().to(search)))
         })
-        .bind("127.0.0.1:8000")?
+        .bind(("0.0.0.0", port))?
         .run()
         .await
     }
