@@ -8,7 +8,7 @@ use bible::traits::BibleSearcher;
 
 
 pub async fn info(bible: web::Data<Arc<Mutex<Bible>>>) -> HttpResponse {
-    HttpResponse::Ok().json(String::from(&bible.lock().unwrap().identifier))
+    HttpResponse::Ok().json(bible.lock().unwrap().get_translation())
 }
 
 pub async fn chapter(bible: web::Data<Arc<Mutex<Bible>>>, info: web::Path<(usize, usize)>) -> HttpResponse {
