@@ -4,7 +4,9 @@ extern crate num;
 
 mod constants;
 mod routes;
-extern crate bible;
+mod bible;
+mod zefania_impl;
+mod traits;
 
 use clap::ArgMatches;
 use log4rs::{self, config::RawConfig};
