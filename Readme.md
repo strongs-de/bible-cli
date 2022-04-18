@@ -137,3 +137,11 @@ curl http://localhost:8000/{search_term}
 
 # Hint: The result is a list of strings in the format "{book_nr}_{chapter_nr}_{verse_nr}"
 ```
+
+# Run with docker
+
+You can use `bible-cli` with docker:
+
+```bash
+docker run --rm -it -v `pwd`:/data mirhec/bible-cli "/data/bibles/*.xml" export
+```
