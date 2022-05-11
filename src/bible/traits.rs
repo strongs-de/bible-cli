@@ -1,4 +1,4 @@
-use crate::bible::{Bible, VerseRef};
+use crate::{Bible, VerseRef};
 use std::error::Error;
 use rayon::prelude::*;
 use std::sync::{Arc, Mutex};

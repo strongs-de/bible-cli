@@ -1,5 +1,5 @@
-use crate::bible::{Bible, Verse, Chunk, VerseRef};
-use crate::traits::BibleParser;
+use crate::{Bible, Verse, Chunk, VerseRef};
+use crate::BibleParser;
 
 use std::str::{self, FromStr};
 use std::error::Error;

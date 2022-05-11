@@ -1,12 +1,7 @@
-#[macro_use] extern crate num_derive;
 
 extern crate num;
 
-mod constants;
 mod routes;
-mod bible;
-mod zefania_impl;
-mod traits;
 
 use clap::ArgMatches;
 use log4rs::{self, config::RawConfig};
@@ -15,10 +10,10 @@ use actix_web::{App as ActixApp, web, middleware, HttpServer};
 use routes::{info, chapter, search};
 
 use bible::Translation;
-use zefania_impl::{ZefaniaBible};
-use traits::BibleSearcher;
-use traits::BibleParser;
-use constants::BOOKS;
+use bible::{ZefaniaBible};
+use bible::BibleSearcher;
+use bible::BibleParser;
+use bible::BOOKS;
 
 use std::fs;
 use std::time::Instant;

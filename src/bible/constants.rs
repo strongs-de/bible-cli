@@ -17,7 +17,7 @@ impl fmt::Display for BookNames {
 }
 
 // impl From<i32> for BookNames {
-//     fn from(value: i32) -> Self { 
+//     fn from(value: i32) -> Self {
 //         BookNames
 //     }
 // }

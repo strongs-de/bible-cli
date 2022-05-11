@@ -3,8 +3,8 @@ use actix_web::{
 };
 
 use std::sync::{Mutex, Arc};
-use crate::bible::Bible;
-use crate::traits::BibleSearcher;
+use bible::Bible;
+use bible::BibleSearcher;
 
 
 pub async fn info(bible: web::Data<Arc<Mutex<Bible>>>) -> HttpResponse {
