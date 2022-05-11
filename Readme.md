@@ -8,10 +8,7 @@ or [SourceForge](https://sourceforge.net/projects/zefania-sharp/files/Bibles/).
 
 ```
 USAGE:
-    bible-cli [OPTIONS] <BIBLE> [SUBCOMMAND]
-
-ARGS:
-    <BIBLE>    Sets the bible xml file to use
+    bible-cli.exe [OPTIONS] [SUBCOMMAND]
 
 OPTIONS:
     -h, --help       Print help information
@@ -32,7 +29,7 @@ web ui.
 
 ```
 USAGE:
-    bible-cli <BIBLE> export [OPTIONS]
+    bible-cli export [OPTIONS] <BIBLE>
 
 OPTIONS:
     -h, --help      Print help information
@@ -55,7 +52,7 @@ You can use `bible-cli` to search for a word or phrase in a bible translation, u
 
 ```
 USAGE:
-    bible-cli <BIBLE> search [OPTIONS] [--] [TERM]
+    bible-cli search [OPTIONS] <BIBLE> [--] [TERM]
 
 ARGS:
     <TERM>    search term
@@ -77,11 +74,12 @@ You can use `bible-cli` to provide a rudimentary REST Api for a chosen bible tra
 
 ```
 USAGE:
-    bible-cli <BIBLE> serve [OPTIONS]
+    bible-cli.exe serve [OPTIONS]
 
 OPTIONS:
-    -h, --help                Print help information
-    -p, --port [<port>...]    Port to host the API (default: 8000)
+    -f, --folder [<folder>...]    Path to the bible XML files
+    -h, --help                    Print help information
+    -p, --port [<port>...]        Port to host the API (default: 8000)
 ```
 
 Examples:
@@ -94,7 +92,7 @@ The endpoints available are:
 
 ```bash
 # Get info of the chosen bible translation
-curl http://localhost:8000/info
+curl http://localhost:8000/{identifier}/info
 
     {
     "identifier": "ELB1905STR",
@@ -103,7 +101,7 @@ curl http://localhost:8000/info
 
 
 # Return a bible chapter
-curl http://localhost:8000/{book}/{chapter}
+curl http://localhost:8000/{identifier}/{book}/{chapter}
 
     {
     "chapter": 1,
@@ -124,7 +122,7 @@ curl http://localhost:8000/{book}/{chapter}
     }
 
 # Search in the chosen bible
-curl http://localhost:8000/{search_term}
+curl http://localhost:8000/{identifier}/{search_term}
 
     [
     "0_16_4",

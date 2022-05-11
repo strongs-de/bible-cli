@@ -1,7 +1,13 @@
-GET http://localhost:8000/info
+GET http://localhost:8000/ELB1905STR/info
 
 ###
-GET http://localhost:8000/47/1
+GET http://localhost:8000/LUTH1912/info
 
 ###
-GET http://localhost:8000/Abraham
+GET http://localhost:8000/ELB1905STR/47/1
+
+###
+GET http://localhost:8000/LUTH1912/47/1
+
+###
+GET http://localhost:8000/ELB1905STR/Abraham

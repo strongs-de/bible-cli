@@ -9,11 +9,7 @@ use log::info;
 use actix_web::{App as ActixApp, web, middleware, HttpServer};
 use routes::{info, chapter, search};
 
-use bible::Translation;
-use bible::{ZefaniaBible};
-use bible::BibleSearcher;
-use bible::BibleParser;
-use bible::BOOKS;
+use bible::{Bible, ZefaniaBible, BibleSearcher, BibleParser, BOOKS, Translation};
 
 use std::fs;
 use std::time::Instant;
@@ -32,29 +28,30 @@ async fn main() -> std::io::Result<()> {
     info!("Started bible ...");
 
     let matches = command!()
-        .arg(arg!([BIBLE] "Sets the bible xml file to use").required(true))
         .arg(arg!(-v --verbose ... "Sets the level of verbosity"))
         .subcommand(
             Command::new("export")
                 .about("Exports the bible into static json files")
-                .arg(arg!(-o --outdir ... "Output directory")),
+                .arg(arg!([BIBLE] "Sets the bible xml file to use").required(true))
+                .arg(arg!(-o --outdir ... "Output directory"))
         )
         .subcommand(
             Command::new("search")
                 .about("searches in the bible")
+                .arg(arg!([BIBLE] "Sets the bible xml file to use").required(true))
                 .arg(arg!([TERM] "search term"))
-                .arg(arg!(-t --times [time] "Execute search given times")),
+                .arg(arg!(-t --times [time] "Execute search given times"))
         )
         .subcommand(
             Command::new("serve")
                 .about("serves the bible REST api")
                 .arg(arg!(-p --port [port] "Port to host the API (default: 8000)"))
+                .arg(arg!(-f --folder [folder] "Path to the bible XML files"))
         )
         .get_matches();
 
-    let bible = matches.value_of("BIBLE").unwrap();
-
     if let Some(matches) = matches.subcommand_matches("search") {
+        let bible = matches.value_of("BIBLE").unwrap();
         let bible = ZefaniaBible::parse(bible).unwrap();
         let term = String::from(matches.value_of("TERM").unwrap());
         let count = ArgMatches::value_of_t(matches,"times").unwrap_or(1);
@@ -71,6 +68,7 @@ async fn main() -> std::io::Result<()> {
             println!("  {} {},{}", BOOKS[v.book as usize - 1], v.chapter, v.verse);
         }
     } else if let Some(matches) = matches.subcommand_matches("export") {
+        let bible = matches.value_of("BIBLE").unwrap();
         let outdir = String::from(matches.value_of("outdir").unwrap_or("./static"));
         let mut translations: Vec<Translation> = vec![];
         for path in glob(bible).expect("") {
@@ -120,19 +118,28 @@ async fn main() -> std::io::Result<()> {
 
         println!("  ... done.");
     } else if let Some(serve_args) = matches.subcommand_matches("serve") {
-        let bible = ZefaniaBible::parse(bible).unwrap();
-        let bible = Arc::new(Mutex::new(bible));
         let port = ArgMatches::value_of_t(serve_args,"port").unwrap_or(8000);
+        let folder = String::from(ArgMatches::value_of(serve_args, "folder").unwrap_or("./bibles"));
+        let mut bibles: Vec<Bible> = vec![];
+        for path in fs::read_dir(folder)? {
+            if let Ok(path) = path {
+                if path.file_name().into_string().unwrap().ends_with("xml") {
+                    let bible = ZefaniaBible::parse(path.path().into_os_string().into_string().unwrap().as_str()).unwrap();
+                    bibles.push(bible);
+                }
+            }
+        }
+        let bibles = Arc::new(Mutex::new(bibles));
 
         return HttpServer::new(move || {
             ActixApp::new()
-                .app_data(web::Data::new(bible.clone()))
+                .app_data(web::Data::new(bibles.clone()))
                 // enable logger
                 .wrap(middleware::Logger::default())
                 .app_data(web::JsonConfig::default().limit(4096)) // <- limit size of the payload (global configuration)
-                .service(web::resource("/info").route(web::get().to(info)))
-                .service(web::resource("/{book}/{chapter}").route(web::get().to(chapter)))
-                .service(web::resource("/{search}").route(web::get().to(search)))
+                .service(web::resource("/{identifier}/info").route(web::get().to(info)))
+                .service(web::resource("/{identifier}/{book}/{chapter}").route(web::get().to(chapter)))
+                .service(web::resource("/{identifier}/{search}").route(web::get().to(search)))
         })
         .bind(("0.0.0.0", port))?
         .run()
