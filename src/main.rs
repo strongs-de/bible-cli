@@ -7,7 +7,7 @@ use clap::ArgMatches;
 use log4rs::{self, config::RawConfig};
 use log::info;
 use actix_web::{App as ActixApp, web, middleware, HttpServer};
-use routes::{info, chapter, search};
+use routes::{info, chapter, search, translations, verse, greek_strongs};
 
 use bible::{Bible, ZefaniaBible, BibleSearcher, BibleParser, BOOKS, Translation};
 
@@ -137,6 +137,10 @@ async fn main() -> std::io::Result<()> {
                 // enable logger
                 .wrap(middleware::Logger::default())
                 .app_data(web::JsonConfig::default().limit(4096)) // <- limit size of the payload (global configuration)
+                .service(web::resource("/bibles/translations.json").route(web::get().to(translations)))
+                .service(web::resource("/bibles/{identifier}/greek_strongs/{strong}.json").route(web::get().to(greek_strongs)))
+                .service(web::resource("/bibles/{identifier}/{book}/{chapter}.json").route(web::get().to(chapter)))
+                .service(web::resource("/bibles/{identifier}/{book}/{chapter}/{verse}.json").route(web::get().to(verse)))
                 .service(web::resource("/{identifier}/info").route(web::get().to(info)))
                 .service(web::resource("/{identifier}/{book}/{chapter}").route(web::get().to(chapter)))
                 .service(web::resource("/{identifier}/{search}").route(web::get().to(search)))

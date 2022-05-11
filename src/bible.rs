@@ -18,8 +18,8 @@ pub struct Bible {
     pub identifier: String,
     pub name: String,
     pub books: Vec<Book>,
-    pub greek_strong_dict: HashMap<i32, StrongDictEntry>,
-    pub hebrew_strong_dict: HashMap<i32, StrongDictEntry>,
+    pub greek_strong_dict: HashMap<usize, StrongDictEntry>,
+    pub hebrew_strong_dict: HashMap<usize, StrongDictEntry>,
 }
 
 #[derive(Clone, Serialize)]
@@ -132,7 +132,7 @@ impl Bible {
             &mut self.hebrew_strong_dict
         } else {
             &mut self.greek_strong_dict
-        }.entry(strong_nr).or_insert(StrongDictEntry::new());
+        }.entry(strong_nr as usize).or_insert(StrongDictEntry::new());
         let found = entry.variants.iter_mut().find(|x| x.variant == text.to_lowercase());
         if found.is_some() {
             found.unwrap().count += 1;

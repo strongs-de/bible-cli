@@ -11,3 +11,15 @@ GET http://localhost:8000/LUTH1912/47/1
 
 ###
 GET http://localhost:8000/ELB1905STR/Abraham
+
+###
+GET http://localhost:8000/bibles/translations.json
+
+###
+GET http://localhost:8000/bibles/LUTH1912/47/1.json
+
+###
+GET http://localhost:8000/bibles/ELB1905STR/47/1/3.json
+
+###
+GET http://localhost:8000/bibles/ELB1905STR/greek_strongs/1001.json
