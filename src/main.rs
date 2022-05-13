@@ -6,8 +6,10 @@ mod routes;
 use clap::ArgMatches;
 use log4rs::{self, config::RawConfig};
 use log::info;
-use actix_web::{App as ActixApp, web, middleware, HttpServer};
-use routes::{info, chapter, search, translations, verse, greek_strongs};
+use actix_web::{App as ActixApp, web, middleware, HttpServer, http};
+use actix_cors::Cors;
+use actix_files;
+use routes::{info, chapter, search, translations, verse, greek_strongs, single_page_app};
 
 use bible::{Bible, ZefaniaBible, BibleSearcher, BibleParser, BOOKS, Translation};
 
@@ -17,6 +19,8 @@ use std::sync::{Arc, Mutex};
 use clap::{arg, command, Command};
 use serde_json;
 use glob::glob;
+
+
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
@@ -132,18 +136,34 @@ async fn main() -> std::io::Result<()> {
         let bibles = Arc::new(Mutex::new(bibles));
 
         return HttpServer::new(move || {
+            let cors = Cors::default()
+              .allowed_origin_fn(|origin, _req_head| {
+                  origin.as_bytes().ends_with(b".strongs.de") ||
+                  origin.as_bytes().starts_with(b"http://localhost:")
+              })
+              .allowed_methods(vec!["GET", "OPTIONS"])
+              .allowed_headers(vec![http::header::CONTENT_TYPE, http::header::ACCEPT])
+              .max_age(3600);
+
             ActixApp::new()
+                .wrap(cors)
                 .app_data(web::Data::new(bibles.clone()))
                 // enable logger
                 .wrap(middleware::Logger::default())
                 .app_data(web::JsonConfig::default().limit(4096)) // <- limit size of the payload (global configuration)
-                .service(web::resource("/bibles/translations.json").route(web::get().to(translations)))
-                .service(web::resource("/bibles/{identifier}/greek_strongs/{strong}.json").route(web::get().to(greek_strongs)))
-                .service(web::resource("/bibles/{identifier}/{book}/{chapter}.json").route(web::get().to(chapter)))
-                .service(web::resource("/bibles/{identifier}/{book}/{chapter}/{verse}.json").route(web::get().to(verse)))
-                .service(web::resource("/{identifier}/info").route(web::get().to(info)))
-                .service(web::resource("/{identifier}/{book}/{chapter}").route(web::get().to(chapter)))
-                .service(web::resource("/{identifier}/{search}").route(web::get().to(search)))
+                .route("/bibles/translations.json", web::get().to(translations))
+                .route("/bibles/{identifier}/greek_strongs/{strong}.json", web::get().to(greek_strongs))
+                .route("/bibles/{identifier}/{book}/{chapter}.json", web::get().to(chapter))
+                .route("/bibles/{identifier}/{book}/{chapter}/{verse}.json", web::get().to(verse))
+                .route("/{identifier}/info", web::get().to(info))
+                .route("/{identifier}/{book}/{chapter}", web::get().to(chapter))
+                .route("/{identifier}/{search}", web::get().to(search))
+                .route("/", web::get().to(single_page_app))
+
+                .route("/{book}/{chapter}", web::get().to(single_page_app))
+                .route("/strongs/greek/{nr}", web::get().to(single_page_app))
+                .route("/strongs/hebrew/{nr}", web::get().to(single_page_app))
+                .service(actix_files::Files::new("/", "./static/").index_file("index.html"))
         })
         .bind(("0.0.0.0", port))?
         .run()

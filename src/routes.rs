@@ -1,7 +1,6 @@
-use actix_web::{
-    web, HttpResponse
-};
-
+use actix_web::{web, HttpResponse, Result};
+use actix_files as fs;
+use std::path::PathBuf;
 use std::sync::{Mutex, Arc};
 use bible::{Bible, BibleSearcher, Translation};
 
@@ -60,4 +59,9 @@ pub async fn greek_strongs(bibles: web::Data<Arc<Mutex<Vec<Bible>>>>, info: web:
     } else {
         HttpResponse::BadRequest().json(String::from("Could not find bible translation with given identifier."))
     }
+}
+
+pub async fn single_page_app() -> Result<fs::NamedFile> {
+    let path: PathBuf = PathBuf::from("./static/index.html");
+    Ok(fs::NamedFile::open(path)?)
 }
