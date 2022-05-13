@@ -137,13 +137,13 @@ async fn main() -> std::io::Result<()> {
 
         return HttpServer::new(move || {
             let cors = Cors::default()
-              .allowed_origin_fn(|origin, _req_head| {
-                  origin.as_bytes().ends_with(b".strongs.de") ||
-                  origin.as_bytes().starts_with(b"http://localhost:")
-              })
-              .allowed_methods(vec!["GET", "OPTIONS"])
-              .allowed_headers(vec![http::header::CONTENT_TYPE, http::header::ACCEPT])
-              .max_age(3600);
+                // .allowed_origin("localhost")
+                // .allowed_origin_fn(|origin, _req_head| {
+                //     origin.as_bytes().ends_with(b".strongs.de")
+                // })
+                .allow_any_origin()
+                .max_age(3600);
+            // let cors = Cors::permissive();
 
             ActixApp::new()
                 .wrap(cors)
@@ -151,19 +151,20 @@ async fn main() -> std::io::Result<()> {
                 // enable logger
                 .wrap(middleware::Logger::default())
                 .app_data(web::JsonConfig::default().limit(4096)) // <- limit size of the payload (global configuration)
-                .route("/bibles/translations.json", web::get().to(translations))
-                .route("/bibles/{identifier}/greek_strongs/{strong}.json", web::get().to(greek_strongs))
-                .route("/bibles/{identifier}/{book}/{chapter}.json", web::get().to(chapter))
-                .route("/bibles/{identifier}/{book}/{chapter}/{verse}.json", web::get().to(verse))
-                .route("/{identifier}/info", web::get().to(info))
-                .route("/{identifier}/{book}/{chapter}", web::get().to(chapter))
-                .route("/{identifier}/{search}", web::get().to(search))
+                .route("/api/translations.json", web::get().to(translations))
+                .route("/api/{identifier}/greek_strongs/{strong}.json", web::get().to(greek_strongs))
+                .route("/api/{identifier}/{book}/{chapter}.json", web::get().to(chapter))
+                .route("/api/{identifier}/{book}/{chapter}/{verse}.json", web::get().to(verse))
+                .route("/api/{identifier}/info", web::get().to(info))
+                .route("/api/{identifier}/{book}/{chapter}", web::get().to(chapter))
+                .route("/api/{identifier}/{search}", web::get().to(search))
+
+                .service(actix_files::Files::new("/build/", "./static/build"))
                 .route("/", web::get().to(single_page_app))
 
                 .route("/{book}/{chapter}", web::get().to(single_page_app))
                 .route("/strongs/greek/{nr}", web::get().to(single_page_app))
                 .route("/strongs/hebrew/{nr}", web::get().to(single_page_app))
-                .service(actix_files::Files::new("/", "./static/").index_file("index.html"))
         })
         .bind(("0.0.0.0", port))?
         .run()
