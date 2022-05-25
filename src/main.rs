@@ -136,14 +136,14 @@ async fn main() -> std::io::Result<()> {
         let bibles = Arc::new(Mutex::new(bibles));
 
         return HttpServer::new(move || {
-            let cors = Cors::default()
-                // .allowed_origin("localhost")
-                // .allowed_origin_fn(|origin, _req_head| {
-                //     origin.as_bytes().ends_with(b".strongs.de")
-                // })
-                .allow_any_origin()
-                .max_age(3600);
-            // let cors = Cors::permissive();
+            // let cors = Cors::default()
+            //     // .allowed_origin("localhost")
+            //     // .allowed_origin_fn(|origin, _req_head| {
+            //     //     origin.as_bytes().ends_with(b".strongs.de")
+            //     // })
+            //     .allow_any_origin()
+            //     .max_age(3600);
+            let cors = Cors::permissive();
 
             ActixApp::new()
                 .wrap(cors)
