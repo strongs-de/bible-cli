@@ -93,6 +93,13 @@ impl BibleParser for ZefaniaBible {
                                         String::from(text),
                                         strong_number, grammar_option));
                                 bible.insert_strong_variant(strong_number, String::from(text), VerseRef::new(bnumber, cnumber, vnumber));
+                                // if let Some(v) = bible.get_verse(bnumber, cnumber, vnumber) {
+                                //     let mut chunks: Vec<Chunk> = vec![];
+                                //     for c in &v.chunks {
+                                //         chunks.push(Chunk::new(String::clone(&c.text)));
+                                //     }
+                                //     bible.insert_strong_variant(strong_number, String::from(text), VerseRef::new_with_chunks(bnumber, cnumber, vnumber, chunks));
+                                // }
                             } else {
                                 bible.get_verse_mut(bnumber, cnumber, vnumber)
                                     .add_chunk(String::from(e.unescape_and_decode(&parser).unwrap().trim()));

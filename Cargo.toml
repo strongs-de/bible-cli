@@ -32,6 +32,7 @@ serde_json = "1.0"
 glob = "0.3.0"
 log4rs = { version = "1.0.0", optional = true }
 serde_yaml = "0.8.23"
+shellwords = "1.1.0"
 
 [features]
 binaries = ["clap", "log", "log4rs", "actix-web", "actix-rt", "actix-cors", "actix-files"]

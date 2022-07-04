@@ -69,7 +69,7 @@ async fn main() -> std::io::Result<()> {
         }
         println!("Found {} occurrences parallel in {}ms (searched {} times)!", res.len(), (now.elapsed().as_millis() as f32 / count as f32), count);
         for v in res {
-            println!("  {} {},{}", BOOKS[v.book as usize - 1], v.chapter, v.verse);
+            println!("  {}", v.to_string());
         }
     } else if let Some(matches) = matches.subcommand_matches("export") {
         let bible = matches.value_of("BIBLE").unwrap();

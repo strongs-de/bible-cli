@@ -55,7 +55,12 @@ pub async fn greek_strongs(bibles: web::Data<Arc<Mutex<Vec<Bible>>>>, info: web:
     let identifier = info.0.clone();
     let strong = info.1.clone();
     if let Some(bible) = bibles.lock().unwrap().iter().filter(|x| x.identifier == identifier).nth(0) {
-        HttpResponse::Ok().json(bible.greek_strong_dict.get(&strong))
+        // HttpResponse::Ok().json(bible.greek_strong_dict.get(&strong))
+        if let Some(dict) = bible.greek_strong_dict.get(&strong) {
+            HttpResponse::Ok().json(dict.get_with_chunks(&bible))
+        } else {
+            HttpResponse::Ok().json(bible.greek_strong_dict.get(&strong))
+        }
     } else {
         HttpResponse::BadRequest().json(String::from("Could not find bible translation with given identifier."))
     }

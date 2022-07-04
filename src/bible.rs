@@ -2,6 +2,7 @@ pub mod constants;
 pub mod zefania_impl;
 pub mod traits;
 
+use crate::BOOKS;
 use serde::{Serialize, Serializer};
 use std::cell::{RefCell};
 use std::collections::HashMap;
@@ -53,11 +54,12 @@ pub struct Verse {
     pub chunks: Vec<Chunk>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct VerseRef {
     pub book: usize,
     pub chapter: usize,
-    pub verse: usize
+    pub verse: usize,
+    pub chunks: Option<Vec<Chunk>>
 }
 
 #[derive(Clone, Serialize)]
@@ -137,7 +139,7 @@ impl Bible {
         if found.is_some() {
             found.unwrap().count += 1;
         } else {
-            entry.variants.push(StrongVariant { variant: text.to_lowercase(), count: 0});
+            entry.variants.push(StrongVariant { variant: text.to_lowercase(), count: 1});
         }
         entry.refs.push(verse_ref);
     }
@@ -265,15 +267,69 @@ impl StrongNumber {
 
 impl VerseRef {
     pub fn new(book: usize, chapter: usize, verse: usize) -> Self {
-        Self { book: book, chapter: chapter, verse: verse }
+        Self { book: book, chapter: chapter, verse: verse, chunks: None }
+    }
+
+    pub fn new_with_chunks(book: usize, chapter: usize, verse: usize, chunks: Vec<Chunk>) -> Self {
+        Self { book: book, chapter: chapter, verse: verse, chunks: Some(chunks) }
+    }
+    pub fn to_string(&self) -> String {
+        let passage = format!("  {} {},{}", BOOKS[self.book as usize - 1], self.chapter, self.verse);
+        if let Some(chunks) = &self.chunks {
+            return format!("{}: {}", &passage, chunks.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(" "));
+        }
+        passage
     }
 }
 
-impl Serialize for VerseRef {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(format!("{}_{}_{}", self.book, self.chapter, self.verse).as_str())
+impl StrongDictEntry {
+    pub fn get_with_chunks(&self, bible: &Bible) -> Self {
+        let mut refs = vec![];
+        for r in &self.refs {
+            if let Some(v) = bible.get_verse(r.book, r.chapter, r.verse) {
+                let mut chunks = vec![];
+                for chunk in &v.chunks {
+                    if let Some(strong) = &chunk.strong {
+                        let num = strong.borrow().number;
+                        let grammar = &strong.borrow().grammar;
+                        if let Some(grammar) = grammar {
+                            chunks.push(Chunk::new_strong(String::clone(&chunk.text), num, Some(String::clone(grammar))));
+                        } else {
+                            chunks.push(Chunk::new_strong(String::clone(&chunk.text), num, None));
+                        }
+                    } else {
+                        chunks.push(Chunk::new(String::clone(&chunk.text)));
+                    }
+                }
+                refs.push(VerseRef::new_with_chunks(r.book, r.chapter, r.verse, chunks));
+            }
+        }
+
+        let mut variants = vec![];
+        for var in &self.variants {
+            variants.push(StrongVariant {
+                count: var.count,
+                variant: String::clone(&var.variant)
+            });
+        }
+
+        Self {
+            refs: refs,
+            variants: variants
+        }
     }
 }
+
+// impl Serialize for VerseRef {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//         if let Some(chunks) = &self.chunks {
+//             // serializer.serialize_str(format!("{}_{}_{}", self.book, self.chapter, self.verse).as_str())
+//             serializer.serialize_struct(name: &'static str, len: usize)
+//         } else {
+//             serializer.serialize_str(format!("{}_{}_{}", self.book, self.chapter, self.verse).as_str())
+//         }
+//     }
+// }
