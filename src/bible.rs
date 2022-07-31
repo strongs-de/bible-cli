@@ -110,11 +110,7 @@ impl Bible {
     }
 
     pub fn get_book(&self, book: usize) -> Option<&Book> {
-        if self.books.len() > book {
-            Some(&self.books[book])
-        } else {
-            None
-        }
+        self.books.iter().filter(|x| x.nr == book).nth(0)
     }
 
     pub fn get_chapter(&self, book: usize, chapter: usize) -> Option<&Chapter> {
