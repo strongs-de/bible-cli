@@ -9,7 +9,7 @@ use log::info;
 use actix_web::{App as ActixApp, web, middleware, HttpServer, http};
 use actix_cors::Cors;
 use actix_files;
-use routes::{info, chapter, search, translations, verse, greek_strongs, single_page_app};
+use routes::{info, chapter, search, translations, verse, greek_strongs, single_page_app, hebrew_strongs};
 
 use bible::{Bible, ZefaniaBible, BibleSearcher, BibleParser, BOOKS, Translation};
 
@@ -153,6 +153,7 @@ async fn main() -> std::io::Result<()> {
                 .app_data(web::JsonConfig::default().limit(4096)) // <- limit size of the payload (global configuration)
                 .route("/api/translations.json", web::get().to(translations))
                 .route("/api/{identifier}/greek_strongs/{strong}.json", web::get().to(greek_strongs))
+                .route("/api/{identifier}/hebrew_strongs/{strong}.json", web::get().to(hebrew_strongs))
                 .route("/api/{identifier}/{book}/{chapter}.json", web::get().to(chapter))
                 .route("/api/{identifier}/{book}/{chapter}/{verse}.json", web::get().to(verse))
                 .route("/api/{identifier}/info", web::get().to(info))

@@ -52,14 +52,22 @@ pub async fn search(bibles: web::Data<Arc<Mutex<Vec<Bible>>>>, info: web::Path<(
 }
 
 pub async fn greek_strongs(bibles: web::Data<Arc<Mutex<Vec<Bible>>>>, info: web::Path<(String, usize)>) -> HttpResponse {
+    strongs(bibles, info, true).await
+}
+
+pub async fn hebrew_strongs(bibles: web::Data<Arc<Mutex<Vec<Bible>>>>, info: web::Path<(String, usize)>) -> HttpResponse {
+    strongs(bibles, info, false).await
+}
+
+pub async fn strongs(bibles: web::Data<Arc<Mutex<Vec<Bible>>>>, info: web::Path<(String, usize)>, greek: bool) -> HttpResponse {
     let identifier = info.0.clone();
     let strong = info.1.clone();
     if let Some(bible) = bibles.lock().unwrap().iter().filter(|x| x.identifier == identifier).nth(0) {
-        // HttpResponse::Ok().json(bible.greek_strong_dict.get(&strong))
-        if let Some(dict) = bible.greek_strong_dict.get(&strong) {
+        let strong_dict = if greek { bible.greek_strong_dict.get(&strong) } else { bible.hebrew_strong_dict.get(&strong) };
+        if let Some(dict) = strong_dict {
             HttpResponse::Ok().json(dict.get_with_chunks(&bible))
         } else {
-            HttpResponse::Ok().json(bible.greek_strong_dict.get(&strong))
+            HttpResponse::BadRequest().json(String::from("Could not find strong numbers."))
         }
     } else {
         HttpResponse::BadRequest().json(String::from("Could not find bible translation with given identifier."))
